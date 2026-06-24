@@ -68,6 +68,7 @@ function getActivities(): Activity[] {
         tags: Array.isArray(data.tags) ? data.tags : [],
         color: String(data.color ?? '#39C5BB'),
         coverIcon: String(data.coverIcon ?? 'MO'),
+        url: data.url ? String(data.url) : undefined,
         body,
       };
     })

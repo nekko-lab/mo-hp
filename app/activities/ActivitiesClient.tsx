@@ -88,6 +88,26 @@ function TagBadge({ tag, color }: { tag: string; color: string }) {
   );
 }
 
+function TitleLinkIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="0.72em"
+      height="0.72em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ flex: '0 0 auto', transform: 'translateY(0.04em)' }}
+    >
+      <path d="M7 17L17 7" />
+      <path d="M9 7h8v8" />
+    </svg>
+  );
+}
+
 export default function ActivitiesClient({ activities, tags }: Props) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -403,7 +423,23 @@ export default function ActivitiesClient({ activities, tags }: Props) {
                   marginBottom: '1rem',
                 }}
               >
-                {selectedActivity.title}
+                {selectedActivity.url ? (
+                  <a
+                    href={selectedActivity.url}
+                    style={{
+                      color: 'inherit',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'baseline',
+                      gap: '0.45rem',
+                    }}
+                  >
+                    <span>{selectedActivity.title}</span>
+                    <TitleLinkIcon />
+                  </a>
+                ) : (
+                  selectedActivity.title
+                )}
               </h2>
               <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                 {selectedActivity.tags.map((tag) => (

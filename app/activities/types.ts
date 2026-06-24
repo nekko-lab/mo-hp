@@ -6,5 +6,6 @@ export type Activity = {
   tags: string[];
   color: string;
   coverIcon: string;
+  url?: string;
   body: string;
 };
