@@ -28,11 +28,22 @@ jobs:
     permissions:
       contents: write
       packages: write
-      pull-requests: write
 
     steps:
+      - name: Generate Nekko Bot token
+        id: nekko-bot-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.NEKKO_BOT_APP_ID }}
+          private-key: ${{ secrets.NEKKO_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ steps.nekko-bot-token.outputs.token }}
+          persist-credentials: true
 
       - name: Generate Cloudflare IP List
         run: |
@@ -76,21 +87,10 @@ jobs:
         with:
           cmd: yq '.spec.template.spec.containers[0].image = env(IMAGE)' -i ${{ env.WORK_DIR }}container/manifest/sync/app-mo.yaml
 
-      - name: Create manifest update pull request
-        uses: peter-evans/create-pull-request@v8
+      - name: Commit manifest updates
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          token: ${{ secrets.PR_TOKEN }}
-          commit-message: 'ci(fire): Update image to ${{ github.sha }}'
-          title: 'ci(fire): Update image to ${{ github.sha }}'
-          body: |
-            Update deployment manifest after building a new container image.
-
-            - Image: `${{ env.IMAGE }}`
-            - Source commit: `${{ github.sha }}`
-          branch: 'ci/update-image'
-          delete-branch: true
-          assignees: sumyka
-          reviewers: sumyka
-          add-paths: |
+          commit_message: 'ci(fire): Update image to ${{ github.sha }}'
+          file_pattern: |
             container/manifest/sync/app-mo.yaml
             container/nginx/conf.d/01-real-ip-list.conf
