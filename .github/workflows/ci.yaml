@@ -11,6 +11,9 @@ on:
   push:
     branches:
       - 'master'
+    paths-ignore:
+      - 'container/manifest/sync/app-mo.yaml'
+      - 'container/nginx/conf.d/01-real-ip-list.conf'
   workflow_dispatch:
 
 jobs:
@@ -25,10 +28,11 @@ jobs:
     permissions:
       contents: write
       packages: write
+      pull-requests: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate Cloudflare IP List
         run: |
@@ -72,7 +76,20 @@ jobs:
         with:
           cmd: yq '.spec.template.spec.containers[0].image = env(IMAGE)' -i ${{ env.WORK_DIR }}container/manifest/sync/app-mo.yaml
 
-      - name: Commit
-        uses: stefanzweifel/git-auto-commit-action@v4
+      - name: Create manifest update pull request
+        uses: peter-evans/create-pull-request@v8
         with:
-          commit_message: 'ci(fire): Update image to ${{ github.sha }}'
+          commit-message: 'ci(fire): Update image to ${{ github.sha }}'
+          title: 'ci(fire): Update image to ${{ github.sha }}'
+          body: |
+            Update deployment manifest after building a new container image.
+
+            - Image: `${{ env.IMAGE }}`
+            - Source commit: `${{ github.sha }}`
+          branch: 'ci/update-image'
+          delete-branch: true
+          assignees: sumyka
+          reviewers: sumyka
+          add-paths: |
+            container/manifest/sync/app-mo.yaml
+            container/nginx/conf.d/01-real-ip-list.conf
