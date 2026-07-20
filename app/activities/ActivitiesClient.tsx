@@ -54,7 +54,7 @@ function MarkdownContent({ markdown }: { markdown: string }) {
               }}
             >
               {trimmed.split('\n').map((item, itemIndex) => (
-                <li key={`${index}-${itemIndex}-${item}`}>{item.replace(/^- /, '')}</li>
+                <li key={`${index}-${itemIndex}`}>{item.replace(/^- /, '')}</li>
               ))}
             </ul>
           );
