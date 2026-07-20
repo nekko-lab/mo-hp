@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Activity } from './types';
 
 type Props = {
@@ -111,6 +111,7 @@ function TitleLinkIcon() {
 export default function ActivitiesClient({ activities, tags }: Props) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const filteredActivities = useMemo(() => {
     if (selectedTags.length === 0) {
@@ -133,6 +134,7 @@ export default function ActivitiesClient({ activities, tags }: Props) {
       }
     };
 
+    const previouslyFocused = previousFocusRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
@@ -140,6 +142,12 @@ export default function ActivitiesClient({ activities, tags }: Props) {
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
+
+      if (previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus({ preventScroll: true });
+      }
+
+      previousFocusRef.current = null;
     };
   }, [selectedActivity]);
 
@@ -236,7 +244,10 @@ export default function ActivitiesClient({ activities, tags }: Props) {
               <button
                 key={activity.slug}
                 type="button"
-                onClick={() => setSelectedActivity(activity)}
+                onClick={(event) => {
+                  previousFocusRef.current = event.currentTarget;
+                  setSelectedActivity(activity);
+                }}
                 className="glass card-hover"
                 style={{
                   borderRadius: '16px',
