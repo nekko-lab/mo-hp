@@ -47,6 +47,23 @@ function parseFrontmatter(markdown: string) {
   return { data, body: match[2].trim() };
 }
 
+function getSafeUrl(value: string | string[] | undefined) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  if (value.startsWith('/')) {
+    return value;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function getActivities(): Activity[] {
   if (!fs.existsSync(activitiesDir)) {
     return [];
@@ -68,7 +85,7 @@ function getActivities(): Activity[] {
         tags: Array.isArray(data.tags) ? data.tags : [],
         color: String(data.color ?? '#39C5BB'),
         coverIcon: String(data.coverIcon ?? 'MO'),
-        url: data.url ? String(data.url) : undefined,
+        url: getSafeUrl(data.url),
         body,
       };
     })
