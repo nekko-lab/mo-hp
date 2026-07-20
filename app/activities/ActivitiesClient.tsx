@@ -53,8 +53,8 @@ function MarkdownContent({ markdown }: { markdown: string }) {
                 paddingLeft: '1.25rem',
               }}
             >
-              {trimmed.split('\n').map((item) => (
-                <li key={item}>{item.replace(/^- /, '')}</li>
+              {trimmed.split('\n').map((item, itemIndex) => (
+                <li key={`${index}-${itemIndex}-${item}`}>{item.replace(/^- /, '')}</li>
               ))}
             </ul>
           );
@@ -133,11 +133,12 @@ export default function ActivitiesClient({ activities, tags }: Props) {
       }
     };
 
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [selectedActivity]);
@@ -348,6 +349,7 @@ export default function ActivitiesClient({ activities, tags }: Props) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="activity-modal-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
             style={{
               width: 'min(860px, 100%)',
@@ -388,6 +390,7 @@ export default function ActivitiesClient({ activities, tags }: Props) {
                   type="button"
                   onClick={() => setSelectedActivity(null)}
                   aria-label="閉じる"
+                  autoFocus
                   style={{
                     width: '40px',
                     height: '40px',
