@@ -60,6 +60,27 @@ function MarkdownContent({ markdown }: { markdown: string }) {
           );
         }
 
+        if (trimmed.startsWith('> ')) {
+          return (
+            <blockquote
+              key={index}
+              style={{
+                borderLeft: '3px solid rgba(57, 197, 187, 0.55)',
+                padding: '0.75rem 1rem',
+                borderRadius: '0 8px 8px 0',
+                background: 'rgba(57, 197, 187, 0.08)',
+                color: 'var(--color-text-secondary)',
+                whiteSpace: 'pre-line',
+              }}
+            >
+              {trimmed
+                .split('\n')
+                .map((line) => line.replace(/^>\s?/, ''))
+                .join('\n')}
+            </blockquote>
+          );
+        }
+
         return (
           <p key={index} style={{ whiteSpace: 'pre-line' }}>
             {trimmed}
