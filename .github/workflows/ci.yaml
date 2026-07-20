@@ -79,6 +79,7 @@ jobs:
       - name: Create manifest update pull request
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.PR_TOKEN }}
           commit-message: 'ci(fire): Update image to ${{ github.sha }}'
           title: 'ci(fire): Update image to ${{ github.sha }}'
           body: |
