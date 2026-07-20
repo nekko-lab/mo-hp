@@ -2,7 +2,7 @@
 title: 'デモデータ'
 date: '2026-06-24'
 summary: 'デモ！！'
-tags: ['ライブ', '津田沼祭', 'DJ', '音楽']
+tags: ['開発']
 color: '#ffa500'
 coverIcon: '開発'
 url: 'https://nc.nekko-lab.dev/'
@@ -14,7 +14,7 @@ url: 'https://nc.nekko-lab.dev/'
 
 ## 制作したもの
 
-- 動的なmatkdown読み込み式に変更
+- 動的なmarkdown読み込み式に変更
 - タグによる活動実績の管理
 - タイルクリックでページ内のモーダル
 - いかなる方法でもモーダルを閉じられる
