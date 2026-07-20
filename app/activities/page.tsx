@@ -64,6 +64,10 @@ function getSafeUrl(value: string | string[] | undefined) {
   }
 }
 
+function isPublished(value: string | string[] | undefined) {
+  return value !== 'false';
+}
+
 function getActivities(): Activity[] {
   if (!fs.existsSync(activitiesDir)) {
     return [];
@@ -72,10 +76,14 @@ function getActivities(): Activity[] {
   return fs
     .readdirSync(activitiesDir)
     .filter((file) => file.endsWith('.md'))
-    .map((file) => {
+    .map((file): Activity | null => {
       const slug = file.replace(/\.md$/, '');
       const markdown = fs.readFileSync(path.join(activitiesDir, file), 'utf8');
       const { data, body } = parseFrontmatter(markdown);
+
+      if (!isPublished(data.published)) {
+        return null;
+      }
 
       return {
         slug,
@@ -89,6 +97,7 @@ function getActivities(): Activity[] {
         body,
       };
     })
+    .filter((activity): activity is Activity => activity !== null)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
