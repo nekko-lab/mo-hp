@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Metadata } from 'next';
 import ActivitiesClient from './ActivitiesClient';
 import type { Activity } from './types';
+import { fetchGrowiActivities } from './GrowiFetch';
 
 export const metadata: Metadata = {
   title: '活動実績',
@@ -65,14 +66,24 @@ function getSafeUrl(value: string | string[] | undefined) {
 }
 
 function isPublished(value: string | string[] | undefined) {
-  return value !== 'false';
+  return value === 'true' ;
 }
 
-function getActivities(): Activity[] {
+async function getActivities(): Promise<Activity[]> {
+  //Growi用のやつを用意する\
+  const rawActivities = await fetchGrowiActivities('/activities');
+  return rawActivities                                              // ← 変更: ファイル一覧の代わり
+    .map((raw): Activity | null => {
+      const slug = raw.slug;                                        // ← 変更: ファイル名の代わり
+      const { data, body } = parseFrontmatter(raw.markdown);        // ← 変更: readFileSync の代わり
+
+      if (!isPublished(data.published)) {
+        return null;
+      }
+  /*
   if (!fs.existsSync(activitiesDir)) {
     return [];
   }
-
   return fs
     .readdirSync(activitiesDir)
     .filter((file) => file.endsWith('.md'))
@@ -84,7 +95,7 @@ function getActivities(): Activity[] {
       if (!isPublished(data.published)) {
         return null;
       }
-
+  */
       return {
         slug,
         title: String(data.title ?? slug),
@@ -99,10 +110,11 @@ function getActivities(): Activity[] {
     })
     .filter((activity): activity is Activity => activity !== null)
     .sort((a, b) => b.date.localeCompare(a.date));
+    
 }
 
-export default function ActivitiesPage() {
-  const activities = getActivities();
+export default async function ActivitiesPage() { // ← 追加
+  const activities = await getActivities();
   const tags = Array.from(new Set(activities.flatMap((activity) => activity.tags))).sort((a, b) =>
     a.localeCompare(b, 'ja'),
   );
