@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: "Miku's Origin の活動実績・プロジェクト一覧",
 };
 
-const activitiesDir = path.join(process.cwd(), 'content', 'activities');
-
+//const activitiesDir = path.join(process.cwd(), 'content', 'activities');
+export const revalidate = 3600;
 function parseStringList(value: string) {
   return value
     .replace(/^\[/, '')
@@ -66,21 +66,21 @@ function getSafeUrl(value: string | string[] | undefined) {
 }
 
 function isPublished(value: string | string[] | undefined) {
-  return value === 'true' ;
+  return value === 'true';
 }
 
 async function getActivities(): Promise<Activity[]> {
   //Growi用のやつを用意する\
   const rawActivities = await fetchGrowiActivities('/activities');
-  return rawActivities                                              // ← 変更: ファイル一覧の代わり
+  return rawActivities // ← 変更: ファイル一覧の代わり
     .map((raw): Activity | null => {
-      const slug = raw.slug;                                        // ← 変更: ファイル名の代わり
-      const { data, body } = parseFrontmatter(raw.markdown);        // ← 変更: readFileSync の代わり
+      const slug = raw.slug; // ← 変更: ファイル名の代わり
+      const { data, body } = parseFrontmatter(raw.markdown); // ← 変更: readFileSync の代わり
 
       if (!isPublished(data.published)) {
         return null;
       }
-  /*
+      /*
   if (!fs.existsSync(activitiesDir)) {
     return [];
   }
@@ -110,10 +110,10 @@ async function getActivities(): Promise<Activity[]> {
     })
     .filter((activity): activity is Activity => activity !== null)
     .sort((a, b) => b.date.localeCompare(a.date));
-    
 }
 
-export default async function ActivitiesPage() { // ← 追加
+export default async function ActivitiesPage() {
+  // ← 追加
   const activities = await getActivities();
   const tags = Array.from(new Set(activities.flatMap((activity) => activity.tags))).sort((a, b) =>
     a.localeCompare(b, 'ja'),
