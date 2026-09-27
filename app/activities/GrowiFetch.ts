@@ -24,7 +24,6 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
     throw new Error('GROWI_URL / GROWI_API_TOKEN が設定されていません');
   }
 
-  const idGet = `${baseUrl}/_api/v3/pages/list`;
   const textGet = `${baseUrl}/_api/v3/page`;
   let allPages: ListResponse['pages'] = [];
   for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
