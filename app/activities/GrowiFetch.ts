@@ -15,6 +15,13 @@ type PageResponse = {
 const PER_PAGE = 20;
 const MAX_PAGES = 50;
 
+/** Growi のページパス（/activities/2025-11-fire-live）から表示用の slug を取り出す。 */
+function toSlug(pagePath: string, fallbackId: string) {
+  const name = pagePath.split('/').filter(Boolean).pop();
+
+  return name ?? fallbackId;
+}
+
 export async function fetchGrowiActivities(path: string): Promise<RawActivity[]> {
   //Growiからページの情報を取得する
   const baseUrl = process.env.GROWI_URL;
@@ -25,18 +32,20 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   }
 
   const textGet = `${baseUrl}/_api/v3/page`;
-  let allPages: ListResponse['pages'] = [];
+  const allPages: ListResponse['pages'] = [];
   for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
     const params = new URLSearchParams({
       access_token: token,
       path,
       page: String(pageNum),
+      limit: String(PER_PAGE),
     });
-    const response = await fetch(`${baseUrl}/_api/v3/pages/list?${params}`);
+    // Growi の更新を即時反映するため、Next.js の Data Cache には載せない。
+    const response = await fetch(`${baseUrl}/_api/v3/pages/list?${params}`, { cache: 'no-store' });
     if (!response.ok) {
       const text = await response.text();
       console.error(
-        'GROWI 403 debug:',
+        'GROWI list error:',
         response.status,
         response.headers.get('server'),
         text.slice(0, 300),
@@ -50,7 +59,7 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   //一覧取得したので、そこからページごとの内容を取得する
   async function fetchBody(pageId: string): Promise<string> {
     const params = new URLSearchParams({ access_token: token, pageId });
-    const response = await fetch(`${textGet}?${params}`);
+    const response = await fetch(`${textGet}?${params}`, { cache: 'no-store' });
 
     if (!response.ok) {
       throw new Error(`GROWI page failed: ${response.status}`);
@@ -62,7 +71,7 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   const results = await Promise.allSettled(allPages.map((p) => fetchBody(p._id)));
   results.forEach((result, i) => {
     if (result.status === 'fulfilled') {
-      activities.push({ slug: allPages[i]._id, markdown: result.value });
+      activities.push({ slug: toSlug(allPages[i].path, allPages[i]._id), markdown: result.value });
     } else {
       console.error(`GROWI page skipped: ${allPages[i].path}`, result.reason);
     }

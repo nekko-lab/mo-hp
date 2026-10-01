@@ -1,17 +1,19 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import type { Metadata } from 'next';
 import ActivitiesClient from './ActivitiesClient';
 import type { Activity } from './types';
 import { fetchGrowiActivities } from './GrowiFetch';
+import { renderMarkdown } from './markdown';
 
 export const metadata: Metadata = {
   title: '活動実績',
   description: "Miku's Origin の活動実績・プロジェクト一覧",
 };
 
-//const activitiesDir = path.join(process.cwd(), 'content', 'activities');
-export const revalidate = 3600;
+// Growi の更新を即時反映するため、キャッシュせずリクエストごとに取得する。
+export const dynamic = 'force-dynamic';
+
+const GROWI_ACTIVITIES_PATH = '/activities';
+
 function parseStringList(value: string) {
   return value
     .replace(/^\[/, '')
@@ -70,42 +72,34 @@ function isPublished(value: string | string[] | undefined) {
 }
 
 async function getActivities(): Promise<Activity[]> {
-  //Growi用のやつを用意する\
-  const rawActivities = await fetchGrowiActivities('/activities');
-  return rawActivities // ← 変更: ファイル一覧の代わり
-    .map((raw): Activity | null => {
-      const slug = raw.slug; // ← 変更: ファイル名の代わり
-      const { data, body } = parseFrontmatter(raw.markdown); // ← 変更: readFileSync の代わり
+  let rawActivities;
 
-      if (!isPublished(data.published)) {
-        return null;
-      }
-      /*
-  if (!fs.existsSync(activitiesDir)) {
+  try {
+    rawActivities = await fetchGrowiActivities(GROWI_ACTIVITIES_PATH);
+  } catch (error) {
+    // Growi が落ちている / トークンが無効でも活動実績ページ自体は表示できるようにする。
+    console.error('GROWI fetch failed, rendering empty activities:', error);
     return [];
   }
-  return fs
-    .readdirSync(activitiesDir)
-    .filter((file) => file.endsWith('.md'))
-    .map((file): Activity | null => {
-      const slug = file.replace(/\.md$/, '');
-      const markdown = fs.readFileSync(path.join(activitiesDir, file), 'utf8');
-      const { data, body } = parseFrontmatter(markdown);
+
+  return rawActivities
+    .map((raw): Activity | null => {
+      const { data, body } = parseFrontmatter(raw.markdown);
 
       if (!isPublished(data.published)) {
         return null;
       }
-  */
+
       return {
-        slug,
-        title: String(data.title ?? slug),
+        slug: raw.slug,
+        title: String(data.title ?? raw.slug),
         date: String(data.date ?? ''),
         summary: String(data.summary ?? ''),
         tags: Array.isArray(data.tags) ? data.tags : [],
         color: String(data.color ?? '#39C5BB'),
         coverIcon: String(data.coverIcon ?? 'MO'),
         url: getSafeUrl(data.url),
-        body,
+        bodyHtml: renderMarkdown(body),
       };
     })
     .filter((activity): activity is Activity => activity !== null)
@@ -113,7 +107,6 @@ async function getActivities(): Promise<Activity[]> {
 }
 
 export default async function ActivitiesPage() {
-  // ← 追加
   const activities = await getActivities();
   const tags = Array.from(new Set(activities.flatMap((activity) => activity.tags))).sort((a, b) =>
     a.localeCompare(b, 'ja'),

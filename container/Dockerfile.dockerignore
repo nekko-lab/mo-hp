@@ -15,8 +15,8 @@ out/
 LICENSE
 
 # コンテナ関連
-Dockerfile
-.dockerignore
+container/Dockerfile
+container/Dockerfile.dockerignore
 
 # 開発関連
 .DS_Store

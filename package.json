@@ -31,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^25.9.8",
     "@types/react": "^19.2.13",
+    "@types/sanitize-html": "^2.16.2",
     "autoprefixer": "^10.4.24",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.1.6",
@@ -43,9 +44,11 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "marked": "^18.0.14",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "sanitize-html": "^2.18.0",
     "server-only": "^0.0.1",
     "sharp": "^0.35.4"
   }
