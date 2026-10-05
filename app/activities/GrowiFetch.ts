@@ -30,18 +30,20 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   if (!baseUrl || !token) {
     throw new Error('GROWI_URL / GROWI_API_TOKEN が設定されていません');
   }
+   const authHeaders = { Authorization: `Bearer ${token}` };
 
   const textGet = `${baseUrl}/_api/v3/page`;
   const allPages: ListResponse['pages'] = [];
   for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
     const params = new URLSearchParams({
-      access_token: token,
       path,
       page: String(pageNum),
       limit: String(PER_PAGE),
     });
     // Growi の更新を即時反映するため、Next.js の Data Cache には載せない。
-    const response = await fetch(`${baseUrl}/_api/v3/pages/list?${params}`, { cache: 'no-store' });
+    const response = await fetch(`${baseUrl}/_api/v3/pages/list?${params}`, { 
+      headers: authHeaders,
+      cache: 'no-store' });
     if (!response.ok) {
       const text = await response.text();
       console.error(
@@ -58,8 +60,8 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   }
   //一覧取得したので、そこからページごとの内容を取得する
   async function fetchBody(pageId: string): Promise<string> {
-    const params = new URLSearchParams({ access_token: token, pageId });
-    const response = await fetch(`${textGet}?${params}`, { cache: 'no-store' });
+    const params = new URLSearchParams({token, pageId });
+    const response = await fetch(`${textGet}?${params}`, { headers: authHeaders, cache: 'no-store' });
 
     if (!response.ok) {
       throw new Error(`GROWI page failed: ${response.status}`);
