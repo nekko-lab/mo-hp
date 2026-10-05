@@ -24,5 +24,4 @@ eslint.config.ts
 prettier.config.cjs
 
 # envファイル
-.env
-.env.sample
+.env*
