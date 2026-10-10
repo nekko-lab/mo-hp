@@ -29,10 +29,16 @@ const sanitizeOptions: sanitizeHtml.IOptions = {
   },
   allowedSchemes: ['http', 'https', 'mailto'],
   transformTags: {
-    // 外部リンクは新規タブで開き、tabnabbing を防ぐ。
+    // Growi 内へのリンク（`/activities/...` など）はこのサイトではなく Growi 側を指すよう
+    // 絶対 URL へ直す。外部リンクは新規タブで開き、tabnabbing を防ぐ。
     a: (tagName, attribs) => ({
       tagName,
-      attribs: { ...attribs, target: '_blank', rel: 'noopener noreferrer' },
+      attribs: {
+        ...attribs,
+        ...(attribs.href ? { href: resolveGrowiUrl(attribs.href) } : {}),
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      },
     }),
     // Growi の添付画像は `/attachment/...` のような相対パスで来るため、
     // このサイトのドメインではなく Growi 側を指すように絶対 URL へ直す。
@@ -48,11 +54,12 @@ function resolveGrowiUrl(src: string | undefined) {
     return '';
   }
 
-  if (!src.startsWith('/')) {
+  // `//host/...`（プロトコル相対）は外部 URL なのでそのまま返す。
+  if (!src.startsWith('/') || src.startsWith('//')) {
     return src;
   }
 
-  const baseUrl = process.env.GROWI_URL;
+  const baseUrl = process.env.GROWI_HOME_URL;
 
   return baseUrl ? `${baseUrl.replace(/\/$/, '')}${src}` : src;
 }

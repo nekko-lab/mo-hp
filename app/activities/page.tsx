@@ -3,54 +3,41 @@ import ActivitiesClient from './ActivitiesClient';
 import type { Activity } from './types';
 import { fetchGrowiActivities } from './GrowiFetch';
 import { renderMarkdown } from './markdown';
+import matter from 'gray-matter';
 
 export const metadata: Metadata = {
   title: '活動実績',
   description: "Miku's Origin の活動実績・プロジェクト一覧",
 };
 
-// Growi の更新を即時反映するため、キャッシュせずリクエストごとに取得する。
+// ビルド時には Growi へアクセスせず、リクエスト時に取得する（取得結果は GrowiFetch.ts で1時間キャッシュ）。
 export const dynamic = 'force-dynamic';
 
 const GROWI_ACTIVITIES_PATH = '/activities';
 
-function parseStringList(value: string) {
-  return value
-    .replace(/^\[/, '')
-    .replace(/\]$/, '')
-    .split(',')
-    .map((item) => item.trim().replace(/^['"]|['"]$/g, ''))
-    .filter(Boolean);
-}
+type FrontmatterValue = unknown;
 
-function parseFrontmatter(markdown: string) {
-  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-
-  if (!match) {
-    return { data: {}, body: markdown };
+/** YAML の日付（Date 型）や文字列を YYYY-MM-DD の文字列にそろえる。 */
+function toDateString(value: FrontmatterValue) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
   }
 
-  const data = match[1].split('\n').reduce<Record<string, string | string[]>>((acc, line) => {
-    const separatorIndex = line.indexOf(':');
-
-    if (separatorIndex === -1) {
-      return acc;
-    }
-
-    const key = line.slice(0, separatorIndex).trim();
-    const rawValue = line.slice(separatorIndex + 1).trim();
-
-    acc[key] = rawValue.startsWith('[')
-      ? parseStringList(rawValue)
-      : rawValue.replace(/^['"]|['"]$/g, '');
-
-    return acc;
-  }, {});
-
-  return { data, body: match[2].trim() };
+  return typeof value === 'string' ? value : '';
 }
 
-function getSafeUrl(value: string | string[] | undefined) {
+/** tags は YAML 配列・カンマ区切り文字列のどちらで書かれても受け付ける。 */
+function toStringList(value: FrontmatterValue) {
+  const items = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+
+  return items.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function toOptionalString(value: FrontmatterValue) {
+  return typeof value === 'string' || typeof value === 'number' ? String(value) : undefined;
+}
+
+function getSafeUrl(value: FrontmatterValue) {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -67,8 +54,9 @@ function getSafeUrl(value: string | string[] | undefined) {
   }
 }
 
-function isPublished(value: string | string[] | undefined) {
-  return value === 'true';
+/** 意図しない公開を防ぐため、published が true（大文字小文字は問わない）のときだけ公開する。 */
+function isPublished(value: FrontmatterValue) {
+  return value === true || (typeof value === 'string' && value.trim().toLowerCase() === 'true');
 }
 
 async function getActivities(): Promise<Activity[]> {
@@ -84,7 +72,16 @@ async function getActivities(): Promise<Activity[]> {
 
   return rawActivities
     .map((raw): Activity | null => {
-      const { data, body } = parseFrontmatter(raw.markdown);
+      // 先頭の空行・空白があるとフロントマターと認識されないため取り除いてから解釈する。
+      let parsed;
+      try {
+        parsed = matter(raw.markdown.trimStart());
+      } catch (error) {
+        console.error(`GROWI frontmatter parse failed: ${raw.slug}`, error);
+        return null;
+      }
+      const { data, content } = parsed;
+      const body = content.trim();
 
       if (!isPublished(data.published)) {
         return null;
@@ -92,12 +89,12 @@ async function getActivities(): Promise<Activity[]> {
 
       return {
         slug: raw.slug,
-        title: String(data.title ?? raw.slug),
-        date: String(data.date ?? ''),
-        summary: String(data.summary ?? ''),
-        tags: Array.isArray(data.tags) ? data.tags : [],
-        color: String(data.color ?? '#39C5BB'),
-        coverIcon: String(data.coverIcon ?? 'MO'),
+        title: toOptionalString(data.title) ?? raw.slug,
+        date: toDateString(data.date),
+        summary: toOptionalString(data.summary) ?? '',
+        tags: toStringList(data.tags),
+        color: toOptionalString(data.color) ?? '#39C5BB',
+        coverIcon: toOptionalString(data.coverIcon) ?? 'MO',
         url: getSafeUrl(data.url),
         bodyHtml: renderMarkdown(body),
       };

@@ -32,7 +32,7 @@ spec:
           #     --from-literal=url=https://<growi-host> \
           #     --from-literal=token=<API トークン>
           env:
-            - name: GROWI_URL
+            - name: GROWI_HOME_URL
               valueFrom:
                 secretKeyRef:
                   name: growi-secret
