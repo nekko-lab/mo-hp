@@ -13,3 +13,7 @@ out/
 
 # OS依存ファイル
 .DS_Store
+
+#claudeのファイル
+AGENTS.md 
+CLAUDE.md 
