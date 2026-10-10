@@ -3,7 +3,7 @@ import ActivitiesClient from './ActivitiesClient';
 import type { Activity } from './types';
 import { fetchGrowiActivities } from './GrowiFetch';
 import { renderMarkdown } from './markdown';
-import matter from 'gray-matter';
+import { parse as parseYaml } from 'yaml';
 
 export const metadata: Metadata = {
   title: '活動実績',
@@ -16,6 +16,27 @@ export const dynamic = 'force-dynamic';
 const GROWI_ACTIVITIES_PATH = '/activities';
 
 type FrontmatterValue = unknown;
+
+// 先頭の BOM・空行・空白と CRLF を許容して `---` で囲まれた部分を切り出す。中身の解釈は yaml に任せる。
+const FRONTMATTER_PATTERN =
+  /^\uFEFF?\s*---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)([\s\S]*)$/;
+
+/** フロントマターと本文に分ける。YAML として不正な場合は例外を投げる。 */
+function parseFrontmatter(markdown: string) {
+  const match = markdown.match(FRONTMATTER_PATTERN);
+
+  if (!match) {
+    return { data: {} as Record<string, FrontmatterValue>, body: markdown.trim() };
+  }
+
+  const parsed: unknown = parseYaml(match[1]);
+  const data =
+    parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, FrontmatterValue>)
+      : {};
+
+  return { data, body: match[2].trim() };
+}
 
 /** YAML の日付（Date 型）や文字列を YYYY-MM-DD の文字列にそろえる。 */
 function toDateString(value: FrontmatterValue) {
@@ -72,16 +93,14 @@ async function getActivities(): Promise<Activity[]> {
 
   return rawActivities
     .map((raw): Activity | null => {
-      // 先頭の空行・空白があるとフロントマターと認識されないため取り除いてから解釈する。
       let parsed;
       try {
-        parsed = matter(raw.markdown.trimStart());
+        parsed = parseFrontmatter(raw.markdown);
       } catch (error) {
         console.error(`GROWI frontmatter parse failed: ${raw.slug}`, error);
         return null;
       }
-      const { data, content } = parsed;
-      const body = content.trim();
+      const { data, body } = parsed;
 
       if (!isPublished(data.published)) {
         return null;
