@@ -19,7 +19,7 @@ const MAX_LIST_REQUESTS = 10;
 // Growi へ同時に投げる本文取得リクエストの数。
 const BODY_CONCURRENCY = 5;
 // Growi へのアクセスを最大1時間に1回にする（Next.js の Data Cache を利用）。
-const REVALIDATE_SECONDS = 3600;
+const REVALIDATE_SECONDS = 300;
 
 /** Growi のページパス（/activities/2025-11-fire-live）から表示用の slug を取り出す。 */
 function toSlug(pagePath: string, fallbackId: string) {
