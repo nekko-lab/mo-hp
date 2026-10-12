@@ -24,8 +24,34 @@ spec:
           emptyDir: {}
       containers:
         - name: mikus-origin-container
-          image: "ghcr.io/nekko-lab/mikus_origin.com:4ccf520abeaceabc689109f7460ea2931f6a8222" # ghcr.io/${{ github.repository }}:${{ github.sha }}
+          image: 'ghcr.io/nekko-lab/mikus_origin.com:4ccf520abeaceabc689109f7460ea2931f6a8222' # ghcr.io/${{ github.repository }}:${{ github.sha }}
           imagePullPolicy: Always
+          # 活動実績ページは Growi から動的に取得するため、API の接続情報が必要。
+          # 事前に Secret を作成しておく:
+          #   kubectl create secret generic growi-secret \
+          #     --from-literal=url=https://<growi-host> \
+          #     --from-literal=token=<API トークン>
+          env:
+            - name: GROWI_HOME_URL
+              valueFrom:
+                secretKeyRef:
+                  name: growi-secret
+                  key: url
+            - name: GROWI_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: growi-secret
+                  key: token
+          ports:
+            - containerPort: 80
+              name: http
+          # Next.js サーバーの起動には数秒かかるため、起動完了まで振り分けない。
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
           resources:
             limits:
               memory: '2048Mi'

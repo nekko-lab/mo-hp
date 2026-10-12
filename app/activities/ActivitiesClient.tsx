@@ -8,89 +8,6 @@ type Props = {
   tags: string[];
 };
 
-function MarkdownContent({ markdown }: { markdown: string }) {
-  const blocks = markdown.split(/\n{2,}/);
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem',
-        color: 'var(--color-text-secondary)',
-        fontSize: '0.95rem',
-        lineHeight: 1.85,
-      }}
-    >
-      {blocks.map((block, index) => {
-        const trimmed = block.trim();
-
-        if (trimmed.startsWith('## ')) {
-          return (
-            <h3
-              key={index}
-              style={{
-                color: 'var(--color-text-primary)',
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                lineHeight: 1.45,
-                marginTop: index === 0 ? 0 : '0.75rem',
-              }}
-            >
-              {trimmed.replace(/^## /, '')}
-            </h3>
-          );
-        }
-
-        if (trimmed.startsWith('- ')) {
-          return (
-            <ul
-              key={index}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.45rem',
-                paddingLeft: '1.25rem',
-              }}
-            >
-              {trimmed.split('\n').map((item, itemIndex) => (
-                <li key={`${index}-${itemIndex}`}>{item.replace(/^- /, '')}</li>
-              ))}
-            </ul>
-          );
-        }
-
-        if (trimmed.startsWith('> ')) {
-          return (
-            <blockquote
-              key={index}
-              style={{
-                borderLeft: '3px solid rgba(57, 197, 187, 0.55)',
-                padding: '0.75rem 1rem',
-                borderRadius: '0 8px 8px 0',
-                background: 'rgba(57, 197, 187, 0.08)',
-                color: 'var(--color-text-secondary)',
-                whiteSpace: 'pre-line',
-              }}
-            >
-              {trimmed
-                .split('\n')
-                .map((line) => line.replace(/^>\s?/, ''))
-                .join('\n')}
-            </blockquote>
-          );
-        }
-
-        return (
-          <p key={index} style={{ whiteSpace: 'pre-line' }}>
-            {trimmed}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
 function TagBadge({ tag, color }: { tag: string; color: string }) {
   return (
     <span
@@ -484,7 +401,11 @@ export default function ActivitiesClient({ activities, tags }: Props) {
             </div>
 
             <div style={{ padding: '2rem' }}>
-              <MarkdownContent markdown={selectedActivity.body} />
+              {/* サーバー側で marked + sanitize-html を通した HTML を描画する */}
+              <div
+                className="markdown-body"
+                dangerouslySetInnerHTML={{ __html: selectedActivity.bodyHtml }}
+              />
             </div>
           </article>
         </div>
