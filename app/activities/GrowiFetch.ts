@@ -14,12 +14,12 @@ type PageResponse = {
 };
 
 const PER_PAGE = 20;
-// totalCount が想定外に大きい／返ってこない場合でも取得し続けないための上限（20件 × 10 = 200件）。
-const MAX_LIST_REQUESTS = 10;
 // Growi へ同時に投げる本文取得リクエストの数。
 const BODY_CONCURRENCY = 5;
 // Growi へのアクセスを最大1時間に1回にする（Next.js の Data Cache を利用）。
 const REVALIDATE_SECONDS = 300;
+//取得がうまくいかなかった場合のタイムアウト時間を設定する
+const REQUEST_TIMEOUT_MS = 5000;
 
 /** Growi のページパス（/activities/2025-11-fire-live）から表示用の slug を取り出す。 */
 function toSlug(pagePath: string, fallbackId: string) {
@@ -42,29 +42,51 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
     next: { revalidate: REVALIDATE_SECONDS },
   };
 
-  const allPages: ListResponse['pages'] = [];
-  for (let pageNum = 1; pageNum <= MAX_LIST_REQUESTS; pageNum++) {
+  //一覧の1ページ分をとってくる
+    // ① 一覧の「1ページ分」を取ってくる関数
+  async function fetchList(pageNum: number): Promise<ListResponse> {
     const params = new URLSearchParams({
       path,
       page: String(pageNum),
       limit: String(PER_PAGE),
     });
-    const response = await fetch(`${baseUrl}/_api/v3/pages/list?${params}`, requestInit);
+    const response = await fetch(`${baseUrl}/_api/v3/pages/list?${params}`, {
+      ...requestInit,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
     if (!response.ok) {
-      const text = await response.text();
-      console.error('GROWI list error:', response.status, text.slice(0, 300));
-      throw new Error(`GROWI list failed: ${response.status}`);
+      throw new Error(`GROWI list page ${pageNum} failed: ${response.status}`);
     }
-    const data: ListResponse = await response.json();
-    allPages.push(...data.pages);
-    // 総件数に達した、または空ページが返ったら終了する。
-    if (data.pages.length === 0 || allPages.length >= data.totalCount) break;
+    return response.json();
   }
 
+  // ② 1ページ目を取得して、総件数から総ページ数を計算する
+  const first = await fetchList(1);
+  const allPages: ListResponse['pages'] = [...first.pages];
+  const totalPages = Math.ceil(first.totalCount / PER_PAGE);
+
+  // ③ 残りのページ番号の配列を作る（例: totalPages が 12 なら [2, 3, ..., 12]）
+  const restPageNums = Array.from({ length: Math.max(totalPages - 1, 0) }, (_, i) => i + 2);
+
+  // ④ 残りのページを BODY_CONCURRENCY 件ずつ取得する
+  for (let i = 0; i < restPageNums.length; i += BODY_CONCURRENCY) {
+    const batch = restPageNums.slice(i, i + BODY_CONCURRENCY);
+    const results = await Promise.allSettled(batch.map((n) => fetchList(n)));
+    results.forEach((result, j) => {
+      if (result.status === 'fulfilled') {
+        allPages.push(...result.value.pages);
+      } else {
+        console.error(`GROWI list page ${batch[j]} skipped`, result.reason);
+      }
+    });
+  }
   //一覧取得したので、そこからページごとの内容を取得する
   async function fetchBody(pageId: string): Promise<string> {
     const params = new URLSearchParams({ pageId });
-    const response = await fetch(`${baseUrl}/_api/v3/page?${params}`, requestInit);
+    const response = await fetch(`${baseUrl}/_api/v3/page?${params}`, {
+      ...requestInit,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
 
     if (!response.ok) {
       throw new Error(`GROWI page failed: ${response.status}`);
