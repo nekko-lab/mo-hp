@@ -20,6 +20,8 @@ const BODY_CONCURRENCY = 5;
 const REVALIDATE_SECONDS = 86400;
 //取得がうまくいかなかった場合のタイムアウト時間を設定する
 const REQUEST_TIMEOUT_MS = 5000;
+//全体としての締め切り時間を設ける
+const TOTAL_TIMEOUT_MS = 10000;
 
 // /api/revalidate からキャッシュを消すときに使う目印。
 export const GROWI_CACHE_TAG = 'growi-activities';
@@ -39,6 +41,8 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   if (!baseUrl || !token) {
     throw new Error('GROWI_HOME_URL / GROWI_API_TOKEN が設定されていません');
   }
+  // 全体の締め切りを作成する
+  const deadline = AbortSignal.timeout(TOTAL_TIMEOUT_MS);
   // トークンはアクセスログに残らないよう、クエリ文字列ではなくヘッダでのみ送る。
   const requestInit = {
     headers: { Authorization: `Bearer ${token}` },
@@ -55,7 +59,7 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
     });
     const response = await fetch(`${baseUrl}/_api/v3/pages/list?${params}`, {
       ...requestInit,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), deadline]),
     });
     if (!response.ok) {
       throw new Error(`GROWI list page ${pageNum} failed: ${response.status}`);
@@ -87,7 +91,7 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
     const params = new URLSearchParams({ pageId });
     const response = await fetch(`${baseUrl}/_api/v3/page?${params}`, {
       ...requestInit,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), deadline]),
     });
 
     if (!response.ok) {
@@ -100,6 +104,11 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   const activities: RawActivity[] = [];
   // 一斉に投げると Growi の接続を使い切るため、BODY_CONCURRENCY 件ずつ取得する。
   for (let i = 0; i < allPages.length; i += BODY_CONCURRENCY) {
+    // 全体の締め切りを過ぎたら、取れた分だけ返す（成功した記事はキャッシュされ、次の表示で残りが補われる）
+    if (deadline.aborted) {
+      console.error(`GROWI total timeout: ${allPages.length - i} pages not fetched`);
+      break;
+    }
     const batch = allPages.slice(i, i + BODY_CONCURRENCY);
     const results = await Promise.allSettled(batch.map((p) => fetchBody(p._id)));
     results.forEach((result, j) => {
