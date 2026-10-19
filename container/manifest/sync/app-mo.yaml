@@ -30,7 +30,6 @@ spec:
           # 事前に Secret を作成しておく:
           #   kubectl create secret generic growi-secret \
           #     --from-literal=url=https://<growi-host> \
-          #     --from-literal=token=<API トークン>
           #     --from-literal=token=<API トークン> \
           #     --from-literal=revalidate-secret=<ランダムな文字列>
           env:
