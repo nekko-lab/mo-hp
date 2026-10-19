@@ -16,10 +16,13 @@ type PageResponse = {
 const PER_PAGE = 20;
 // Growi へ同時に投げる本文取得リクエストの数。
 const BODY_CONCURRENCY = 5;
-// Growi へのアクセスを最大1時間に1回にする（Next.js の Data Cache を利用）。
-const REVALIDATE_SECONDS = 300;
+// Growi へのアクセスを最大1日に1回にする(記事の追加時には/api/revalidateで即時にキャッシュを消去する)
+const REVALIDATE_SECONDS = 86400;
 //取得がうまくいかなかった場合のタイムアウト時間を設定する
 const REQUEST_TIMEOUT_MS = 5000;
+
+// /api/revalidate からキャッシュを消すときに使う目印。
+export const GROWI_CACHE_TAG = 'growi-activities';
 
 /** Growi のページパス（/activities/2025-11-fire-live）から表示用の slug を取り出す。 */
 function toSlug(pagePath: string, fallbackId: string) {
@@ -39,11 +42,11 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   // トークンはアクセスログに残らないよう、クエリ文字列ではなくヘッダでのみ送る。
   const requestInit = {
     headers: { Authorization: `Bearer ${token}` },
-    next: { revalidate: REVALIDATE_SECONDS },
+    next: { revalidate: REVALIDATE_SECONDS, tags: [GROWI_CACHE_TAG] },
   };
 
   //一覧の1ページ分をとってくる
-    // ① 一覧の「1ページ分」を取ってくる関数
+  // ① 一覧の「1ページ分」を取ってくる関数
   async function fetchList(pageNum: number): Promise<ListResponse> {
     const params = new URLSearchParams({
       path,
@@ -68,7 +71,6 @@ export async function fetchGrowiActivities(path: string): Promise<RawActivity[]>
   // ③ 残りのページ番号の配列を作る（例: totalPages が 12 なら [2, 3, ..., 12]）
   const restPageNums = Array.from({ length: Math.max(totalPages - 1, 0) }, (_, i) => i + 2);
 
-  // ④ 残りのページを BODY_CONCURRENCY 件ずつ取得する
   for (let i = 0; i < restPageNums.length; i += BODY_CONCURRENCY) {
     const batch = restPageNums.slice(i, i + BODY_CONCURRENCY);
     const results = await Promise.allSettled(batch.map((n) => fetchList(n)));

@@ -31,6 +31,8 @@ spec:
           #   kubectl create secret generic growi-secret \
           #     --from-literal=url=https://<growi-host> \
           #     --from-literal=token=<API トークン>
+          #     --from-literal=token=<API トークン> \
+          #     --from-literal=revalidate-secret=<ランダムな文字列>
           env:
             - name: GROWI_HOME_URL
               valueFrom:
@@ -42,6 +44,11 @@ spec:
                 secretKeyRef:
                   name: growi-secret
                   key: token
+            - name: REVALIDATE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: growi-secret
+                  key: revalidate-secret
           ports:
             - containerPort: 80
               name: http
