@@ -45,21 +45,22 @@ const highlights = [
 export default function Home() {
   return (
     <main>
-      {/* Development Notice */}
-      <div
-        style={{
-          background: 'linear-gradient(90deg, rgba(245,158,11,0.12), rgba(251,191,36,0.08))',
-          borderBottom: '1px solid rgba(245,158,11,0.2)',
-          padding: '0.625rem 1.5rem',
-          textAlign: 'center',
-          fontSize: '0.825rem',
-          color: '#b45309',
-          fontWeight: 500,
-          letterSpacing: '0.01em',
-        }}
-      >
-        🚧 このサイトは現在開発中です。掲載内容は変更される場合があります。
-      </div>
+      {/*
+        <div
+          style={{
+            background: 'linear-gradient(90deg, rgba(245,158,11,0.12), rgba(251,191,36,0.08))',
+            borderBottom: '1px solid rgba(245,158,11,0.2)',
+            padding: '0.625rem 1.5rem',
+            textAlign: 'center',
+            fontSize: '0.825rem',
+            color: '#b45309',
+            fontWeight: 500,
+            letterSpacing: '0.01em',
+          }}
+        >
+          🚧 このサイトは現在開発中です。掲載内容は変更される場合があります。
+        </div>
+      */}
 
       {/* Hero Section */}
       <section

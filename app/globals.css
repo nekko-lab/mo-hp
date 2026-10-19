@@ -278,6 +278,147 @@ body {
   background: #2ab5ac;
 }
 
+/* ---------- Growi から取得したマークダウン本文 ---------- */
+.markdown-body {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.85;
+  overflow-wrap: break-word;
+}
+
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body p {
+  margin: 0 0 1rem;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  color: var(--color-text-primary);
+  font-weight: 800;
+  line-height: 1.45;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.markdown-body h1 {
+  font-size: 1.45rem;
+}
+
+.markdown-body h2 {
+  font-size: 1.25rem;
+}
+
+.markdown-body h3 {
+  font-size: 1.1rem;
+}
+
+.markdown-body h4 {
+  font-size: 1rem;
+}
+
+.markdown-body strong {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.markdown-body a {
+  color: var(--color-accent-miku);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+}
+
+.markdown-body li {
+  margin-bottom: 0.45rem;
+}
+
+.markdown-body li > input[type='checkbox'] {
+  margin-right: 0.4rem;
+}
+
+.markdown-body blockquote {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid rgba(57, 197, 187, 0.55);
+  border-radius: 0 8px 8px 0;
+  background: rgba(57, 197, 187, 0.08);
+}
+
+.markdown-body blockquote > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body code {
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: rgba(57, 197, 187, 0.1);
+  color: var(--color-text-primary);
+  font-size: 0.88em;
+}
+
+.markdown-body pre {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border-radius: 10px;
+  background: var(--color-bg-secondary);
+  overflow-x: auto;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+/* 表は幅を超えたら表の内側でスクロールさせ、ページ全体が横に伸びないようにする */
+.markdown-body table {
+  display: block;
+  width: 100%;
+  margin: 0 0 1rem;
+  border-collapse: collapse;
+  overflow-x: auto;
+  font-size: 0.9rem;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-glass);
+  text-align: left;
+}
+
+.markdown-body th {
+  background: var(--color-bg-glass);
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.markdown-body hr {
+  margin: 1.75rem 0;
+  border: none;
+  border-top: 1px solid var(--color-border-glass);
+}
+
 @media (max-width: 768px) {
   .section {
     padding: 3rem 1rem;
