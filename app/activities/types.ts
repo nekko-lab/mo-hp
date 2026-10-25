@@ -7,5 +7,6 @@ export type Activity = {
   color: string;
   coverIcon: string;
   url?: string;
-  body: string;
+  /** サーバー側で marked + sanitize-html を通した、描画してよい HTML。 */
+  bodyHtml: string;
 };
