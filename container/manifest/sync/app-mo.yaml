@@ -26,6 +26,55 @@ spec:
         - name: mikus-origin-container
           image: "ghcr.io/nekko-lab/mo-hp:d0a0361dba4edb5297653da2185ee7bbdc064a61" # ghcr.io/${{ github.repository }}:${{ github.sha }}
           imagePullPolicy: Always
+
+          env:
+            - name: GROWI_HOME_URL
+              valueFrom:
+                secretKeyRef:
+                  name: growi-secret
+                  key: url
+
+            - name: GROWI_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: growi-secret
+                  key: token
+
+            - name: REVALIDATE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: growi-secret
+                  key: revalidate-secret
+
+          ports:
+            - containerPort: 80
+              name: http
+
+          # nginxとNext.jsの起動完了を確認する。
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
           resources:
             limits:
               memory: '2048Mi'
@@ -33,9 +82,11 @@ spec:
             requests:
               memory: '256Mi'
               cpu: '250m'
+
           volumeMounts:
             - name: nginx-logs
               mountPath: /var/log/nginx
+
         - name: nginx-exporter
           image: 'nginx/nginx-prometheus-exporter:1.5.1'
           args:

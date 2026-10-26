@@ -24,9 +24,27 @@ COPY . .
 RUN npm run build
 
 ################################################################################
+# Growi から動的に取得するため、静的配信ではなく Next.js サーバー(:3000)を動かし、
+# nginx(:80) をその前段のリバースプロキシとして同居させる。
+# ネイティブモジュールの libc を揃えるため、runner も build と同じ alpine を使う。
 
-FROM nginx:1.29.2 AS runner
+FROM base AS runner
 
-RUN rm -rf /etc/nginx/conf.d/*
-COPY container/nginx/conf.d/*.conf /etc/nginx/conf.d/
-COPY --from=build /usr/src/app/out /usr/share/nginx/html
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Alpine の nginx は /etc/nginx/http.d/*.conf を読み込む（Debian 版の conf.d に相当）
+RUN apk add --no-cache nginx && rm -f /etc/nginx/http.d/*.conf
+COPY container/nginx/conf.d/*.conf /etc/nginx/http.d/
+
+# standalone には .next/static と public が含まれないため個別にコピーする
+COPY --from=build /usr/src/app/.next/standalone ./
+COPY --from=build /usr/src/app/.next/static ./.next/static
+COPY --from=build /usr/src/app/public ./public
+
+COPY container/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 80
+
+CMD ["/usr/local/bin/entrypoint.sh"]
