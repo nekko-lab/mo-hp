@@ -9,7 +9,8 @@ out/
 *.tsbuildinfo
 
 # 環境設定ファイル
-.env
+.env*
+!.env.sample
 
 # OS依存ファイル
 .DS_Store
